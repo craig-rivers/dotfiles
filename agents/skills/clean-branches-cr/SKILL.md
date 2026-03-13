@@ -1,29 +1,35 @@
 ---
 name: clean-branches-cr
-description: Fetch, prune, and delete local branches whose remote tracking branch is gone. Also removes associated worktrees.
+description: Fetches latest remote state and deletes local branches whose remote has been deleted (e.g. after merging a PR).
 user_invocable: true
 ---
 
-Run the following steps:
+## Your Task
 
-1. Fetch and prune remote tracking branches:
+Clean up stale local branches by running these steps in order:
 
-```bash
-git fetch --prune
-```
+1. **Fetch and prune remote tracking references**
+   ```bash
+   git fetch --prune
+   ```
 
-2. Find local branches whose upstream is gone:
+2. **List branches to identify any marked [gone]**
+   ```bash
+   git branch -v
+   ```
 
-```bash
-git branch -vv | grep ': gone]' | awk '{print $1}'
-```
+3. **Remove worktrees and delete [gone] branches**
+   ```bash
+   git branch -v | grep '\[gone\]' | sed 's/^[+* ]//' | awk '{print $1}' | while read branch; do
+     echo "Processing branch: $branch"
+     worktree=$(git worktree list | grep "\\[$branch\\]" | awk '{print $1}')
+     if [ ! -z "$worktree" ] && [ "$worktree" != "$(git rev-parse --show-toplevel)" ]; then
+       echo "  Removing worktree: $worktree"
+       git worktree remove --force "$worktree"
+     fi
+     echo "  Deleting branch: $branch"
+     git branch -D "$branch"
+   done
+   ```
 
-3. For each branch found:
-   - Check if a worktree exists for it: `git worktree list --porcelain | grep -B2 "branch refs/heads/$branch"`
-   - If a worktree exists, remove it first: `git worktree remove <path>`
-   - Delete the local branch: `git branch -d $branch`
-   - If `-d` fails (unmerged), report it and ask whether to force-delete with `-D`
-
-4. Run `git worktree prune --expire now` to clean up any stale worktree metadata.
-
-5. Show a summary of what was cleaned up.
+If no branches are marked as [gone], report that no cleanup was needed.

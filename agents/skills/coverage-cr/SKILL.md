@@ -1,27 +1,51 @@
 ---
 name: coverage-cr
-description: Comprehensive testing strategy audit across all test types. Use when you want a thorough review of test coverage for a project or module.
+description: Comprehensive analysis of testing strategy and coverage across the codebase. Evaluates all test types and identifies gaps.
 user_invocable: true
 ---
 
 Use the Task tool to spawn a general-purpose agent with subagent_type "general-purpose".
 
-The agent should perform a comprehensive testing strategy audit covering:
+Think deeply about testing strategy. This is a comprehensive audit - consider delegating to multiple subagents if the codebase is large or spans different domains (e.g., one for backend, one for frontend, one for infrastructure).
 
-1. **Unit tests**: Function/method-level coverage for business logic
-2. **Integration tests**: Component interaction and database query coverage
-3. **End-to-end tests**: Critical user flow coverage
-4. **Contract tests**: API contract and schema validation
-5. **Snapshot tests**: UI component and serialization output stability
-6. **Property-based tests**: Invariant checking for complex logic
-7. **Performance tests**: Load testing and benchmark coverage
-8. **Security tests**: Authentication, authorization, and input validation
-9. **Smoke tests**: Basic health check and deployment verification
+The agent should analyze the entire codebase (or specified portion) for testing health:
 
-For each test type, the agent should report:
-- Current coverage status (exists/missing/partial)
-- Specific gaps identified
-- Priority recommendation (critical/important/nice-to-have)
-- Suggested test cases to add
+## Test Types to Consider
 
-Pass along any specific files, modules, or scope the user mentions.
+Evaluate whether each type is appropriate and adequately covered:
+
+- **Unit tests**: Individual functions/methods in isolation
+- **Integration tests**: Component interactions, database queries, API calls
+- **End-to-end tests**: Full user flows through the system
+- **Contract tests**: API contracts between services
+- **Snapshot tests**: UI components, serialization formats
+- **Property-based tests**: Invariants that hold across random inputs
+- **Performance tests**: Benchmarks, load tests, regression detection
+- **Security tests**: Input validation, auth flows, vulnerability scanning
+- **Smoke tests**: Critical path verification for deployments
+
+## Analysis Approach
+
+1. Map the codebase structure and identify testable boundaries
+2. Locate existing test files and understand current coverage
+3. Identify critical paths that must not break
+4. Find complex logic that warrants thorough testing
+5. Assess test infrastructure (frameworks, CI integration, mocking patterns)
+6. Look for flaky tests or testing anti-patterns
+
+## Output
+
+**Summary**: Overall testing health and primary gaps.
+
+**Coverage by Area**:
+| Area | Unit | Integration | E2E | Notes |
+
+**Critical Gaps**: High-risk code lacking tests.
+
+**Quick Wins**: Easy tests that would add significant value.
+
+**Strategic Improvements**: Testing infrastructure or patterns to adopt.
+
+**Test Quality Issues**: Flaky tests, poor assertions, maintenance burdens.
+
+Be specific - cite files and suggest concrete test cases.
