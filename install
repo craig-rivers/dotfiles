@@ -1,0 +1,145 @@
+#!/usr/bin/env bash
+#
+# Idempotent installation script for Craig's macOS dotfiles.
+#
+# What it does:
+#   1. Installs Homebrew (if missing)
+#   2. Installs all packages from the Brewfile
+#   3. Creates symlinks from where macOS expects config files to this repo
+#
+# Safe to run multiple times — it skips anything already in place and backs
+# up any existing files before overwriting.
+#
+# Usage:
+#   ~/dotfiles/install
+
+set -euo pipefail
+
+# Colours for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No colour
+
+info() { echo -e "${GREEN}[INFO]${NC} $1"; }
+warn() { echo -e "${YELLOW}[WARN]${NC} $1"; }
+error() { echo -e "${RED}[ERROR]${NC} $1"; exit 1; }
+
+# Guard: macOS only
+if [[ $(uname -s) != 'Darwin' ]]; then
+    error "This script is for macOS only"
+fi
+
+# Guard: repo must exist
+if [[ ! -e ~/dotfiles ]]; then
+    error "$HOME/dotfiles does not exist. Clone the repository first:\n  git clone https://github.com/craig-rivers/dotfiles.git \$HOME/dotfiles"
+fi
+
+info "Starting dotfiles installation..."
+
+# ============================================================================
+# Homebrew
+# ============================================================================
+if [[ -z "$(command -v brew)" ]]; then
+    info "Installing Homebrew..."
+    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+    eval "$(/opt/homebrew/bin/brew shellenv)"
+else
+    info "Homebrew already installed"
+fi
+
+info "Installing/updating packages from Brewfile..."
+if ! brew bundle --verbose --file=~/dotfiles/Brewfile; then
+    warn "Some Brewfile packages failed to install (see above). Continuing..."
+fi
+
+# ============================================================================
+# Claude Code
+# ============================================================================
+if command -v claude &> /dev/null; then
+    info "Claude Code already installed"
+else
+    info "Installing Claude Code..."
+    curl -fsSL https://claude.ai/install.sh | bash
+fi
+
+# ============================================================================
+# Symlinks
+# ============================================================================
+info "Creating dotfiles symlinks..."
+
+# Create a symlink, backing up any existing file first.
+# Usage: create_symlink <source> <target>
+create_symlink() {
+    local source="$1"
+    local target="$2"
+
+    # Already correct — nothing to do
+    if [[ -L "$target" ]] && [[ "$(readlink "$target")" == "$source" ]]; then
+        return 0
+    fi
+
+    # Something else lives there — back it up
+    if [[ -e "$target" ]] || [[ -L "$target" ]]; then
+        local backup_dir
+        backup_dir=~/dotfiles/private/backup/$(date +%Y%m%d_%H%M%S)
+        mkdir -p "$backup_dir"
+        mv "$target" "$backup_dir/$(basename "$target")"
+        warn "Backed up existing $(basename "$target") to $backup_dir"
+    fi
+
+    # Create parent directory if needed
+    mkdir -p "$(dirname "$target")"
+
+    ln -sfn "$source" "$target"
+}
+
+# --- Shell configs (these go to ~/.<filename>) ---
+# zshenv, zprofile, zshrc -> ~/.zshenv, ~/.zprofile, ~/.zshrc
+for file in ~/dotfiles/shell/zsh/*; do
+    if [[ -f "$file" ]]; then
+        name=$(basename "$file")
+        create_symlink "$file" "$HOME/.$name"
+    fi
+done
+
+# inputrc -> ~/.inputrc
+create_symlink ~/dotfiles/readline/inputrc ~/.inputrc
+
+# --- Git ---
+create_symlink ~/dotfiles/git/gitconfig ~/.gitconfig
+create_symlink ~/dotfiles/git/gitignore_global ~/.gitignore_global
+
+# --- Claude Code ---
+mkdir -p ~/.claude
+create_symlink ~/dotfiles/agents/AGENTS.md ~/.claude/CLAUDE.md
+create_symlink ~/dotfiles/claude/settings.json ~/.claude/settings.json
+create_symlink ~/dotfiles/claude/hooks ~/.claude/hooks
+create_symlink ~/dotfiles/claude/agents ~/.claude/agents
+create_symlink ~/dotfiles/agents/skills ~/.claude/skills
+
+# --- Ghostty ---
+mkdir -p ~/.config/ghostty
+create_symlink ~/dotfiles/ghostty/config ~/.config/ghostty/config
+
+# --- ~/bin scripts ---
+mkdir -p ~/bin
+for file in ~/dotfiles/bin/*; do
+    if [[ -f "$file" ]]; then
+        name=$(basename "$file")
+        create_symlink "$file" "$HOME/bin/$name"
+        chmod +x "$file"
+    fi
+done
+
+# ============================================================================
+# Done
+# ============================================================================
+info "Installation complete!"
+echo
+echo "Next steps:"
+echo "  1. Restart your terminal (or run: source ~/.zshrc)"
+echo "  2. Set up GitHub SSH keys (if not already done)"
+echo "  3. Install pre-commit hooks: cd ~/dotfiles && pre-commit install"
+echo
+echo "To update in the future, run this script again."

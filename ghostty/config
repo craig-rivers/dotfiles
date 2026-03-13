@@ -1,0 +1,13 @@
+# Ghostty terminal configuration
+# Docs: https://ghostty.org/docs/config
+
+# Font
+font-family = JetBrains Mono
+font-size = 14
+
+# Theme
+theme = "Gruvbox Dark"
+
+# Window
+window-padding-x = 8
+window-padding-y = 8

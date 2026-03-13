@@ -1,0 +1,28 @@
+# shellcheck shell=bash
+#
+# Executes commands at the start of an interactive session.
+#
+
+# Source profile (PATH, aliases, functions).
+[[ -e ~/dotfiles/shell/profile ]] && source ~/dotfiles/shell/profile
+
+# Setup Homebrew
+eval "$(/opt/homebrew/bin/brew shellenv)"
+
+# Shell history
+export HISTSIZE=100000
+export SAVEHIST=100000
+export HISTFILE="$HOME/.local/state/zsh/history"
+mkdir -p "$(dirname "$HISTFILE")"
+setopt HIST_IGNORE_SPACE
+
+# Zsh plugins (installed via Homebrew)
+source $(brew --prefix)/share/zsh-autosuggestions/zsh-autosuggestions.zsh
+source $(brew --prefix)/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
+
+# Prompt — short directory + git branch
+setopt PROMPT_SUBST
+PROMPT='%F{blue}%1~%f%F{green}$(git branch --show-current 2>/dev/null | sed "s/^/ (/;s/$/)/")%f %# '
+
+# Init zoxide (smarter cd)
+eval "$(zoxide init zsh)"

@@ -1,0 +1,93 @@
+# shellcheck shell=bash
+#
+# Craig's shell profile — loaded on terminal startup.
+
+# ============================================================================
+# PATH
+# ============================================================================
+# Homebrew
+export PATH=/opt/homebrew/bin:$PATH
+
+# User-installed binaries
+export PATH=$HOME/.local/bin:$PATH
+
+# ============================================================================
+# Node (NVM)
+# ============================================================================
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
+
+# ============================================================================
+# Privacy — opt out of CLI telemetry
+# ============================================================================
+[[ -f ~/dotfiles/shell/analytics ]] && source ~/dotfiles/shell/analytics
+
+# ============================================================================
+# Navigation
+# ============================================================================
+alias ..='cd ..'
+alias ...='cd ../..'
+alias ....='cd ../../..'
+
+alias ls='eza'
+alias ll='eza -l'
+alias la='eza -la'
+alias lt='eza --tree -L 1'
+
+# ============================================================================
+# Claude Code
+# ============================================================================
+cc() {
+    brew upgrade --cask claude-code 2>/dev/null
+    claude --dangerously-skip-permissions "$@"
+}
+
+# ============================================================================
+# Git Worktree helpers
+# ============================================================================
+# Usage:
+#   cw <branch>   - Create worktree and launch Claude Code in it
+#   cwl           - List worktrees
+#   cwr <branch>  - Remove a worktree
+
+_worktree_open() {
+    local cmd="$1"
+    local branch="${2:-}"
+
+    if [[ -z "$branch" ]]; then
+        branch=$(gh pr list --state open --json headRefName,title --template '{{range .}}{{.headRefName}}{{"\t"}}{{.title}}{{"\n"}}{{end}}' | fzf --height 40% --prompt="Branch> " | cut -f1)
+        [[ -z "$branch" ]] && return 1
+    fi
+
+    local repo_root
+    repo_root=$(git rev-parse --show-toplevel)
+    local worktree_path="${repo_root}/.worktrees/${branch//\//-}"
+
+    mkdir -p "${repo_root}/.worktrees"
+
+    if git show-ref --verify --quiet "refs/heads/$branch"; then
+        git worktree add "$worktree_path" "$branch"
+    else
+        git worktree add "$worktree_path" -b "$branch"
+    fi
+
+    cd "$worktree_path" && "$cmd"
+}
+
+cw() { _worktree_open cc "$1"; }
+
+alias cwl='git worktree list'
+
+cwr() {
+    local branch="${1:?Usage: cwr <branch-name>}"
+    local wt_path
+    wt_path=$(git worktree list --porcelain | grep -B2 "branch refs/heads/$branch" | grep "^worktree " | cut -d' ' -f2-)
+
+    if [ -z "$wt_path" ]; then
+        echo "No worktree found for branch: $branch"
+        return 1
+    fi
+
+    git worktree remove "$wt_path"
+}

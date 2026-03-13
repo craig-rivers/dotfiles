@@ -1,0 +1,26 @@
+# Compiled Python files
+*.pyc
+
+# IPython notebook checkpoints
+.ipynb_checkpoints/
+
+# Folder view configuration files
+.DS_Store
+Desktop.ini
+
+# Thumbnail cache files
+._*
+Thumbs.db
+
+# Files that might appear on external disks
+.Spotlight-V100
+.Trashes
+
+# Modd
+modd.conf*
+
+# Python testing library
+.hypothesis
+
+# Claude Code local settings (per-machine, not for repos)
+.claude/settings.local.json
