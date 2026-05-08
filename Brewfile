@@ -25,6 +25,8 @@ brew "pre-commit"                 # Git hooks framework
 brew "just"                       # Task runner
 brew "shellcheck"                 # Shell script linter
 brew "ccusage"                    # Claude Code usage tracker
+brew "azure-cli"                  # Azure CLI (ACR login for OrbitLens images)
+brew "docker-credential-helper"   # Keychain credential store for Docker
 
 # Python
 brew "python"
@@ -36,6 +38,9 @@ brew "ruff"                       # Fast Python linter/formatter
 brew "node"
 brew "yarn"
 brew "biome"                      # JS/TS formatter and linter
+
+# Docker
+brew "docker-compose"             # Docker Compose v2 plugin
 
 # Database
 brew "postgresql"
